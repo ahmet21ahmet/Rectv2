@@ -12,18 +12,8 @@ env:
 jobs:
   generate-m3u:
     runs-on: ubuntu-latest
-
-jobs:
-  generate-m3u:
-    runs-on: ubuntu-latest
-    permissions:      # <-- Bu satırı ekleyin
-      contents: write   # <-- Ve bu satırı ekleyin
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      ...
-
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository
