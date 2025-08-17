@@ -1,6 +1,7 @@
 # GitHub Actions workflow to generate and update an M3U playlist
 # This workflow is designed to scrape the HDFilmCehennemi website,
 # mirroring the logic from the provided Kotlin source file.
+# Version 2: Now correctly handles .txt manifest files.
 
 name: Generate and Update M3U Playlist
 
@@ -98,10 +99,11 @@ jobs:
                 ajax_response.raise_for_status()
                 sources = ajax_response.json().get('data', [])
 
-                # 4. Find the first m3u8 source URL
+                # 4. Find the first m3u8 or txt source URL
                 for source in sources:
-                    if source.get('file', '').endswith('.m3u8'):
-                        return source['file']
+                    file_url = source.get('file', '')
+                    if file_url.endswith(('.m3u8', '.txt')):
+                        return file_url
 
             except Exception as e:
                 # print(f"Error getting stream for {item_url}: {e}")
@@ -169,6 +171,8 @@ jobs:
             """
             Uses a thread pool to fetch stream URLs concurrently and write them to the M3U file.
             """
+            if not items:
+                return
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 future_to_item = {executor.submit(get_stream_url_from_item, item['url']): item for item in items}
 
@@ -191,12 +195,9 @@ jobs:
             hdtv = process_category("/category/hdtv/", "HDTV")
             series_episodes = process_series()
 
-            all_content = movies + hdtv + series_episodes
-
             print(f"\nTotal Movies found: {len(movies)}")
             print(f"Total TV Channels found: {len(hdtv)}")
             print(f"Total Series Episodes found: {len(series_episodes)}")
-            print(f"Total items to process: {len(all_content)}")
 
             with open("playlist.m3u", "w", encoding="utf-8") as f:
                 f.write("#EXTM3U\n")
@@ -204,12 +205,9 @@ jobs:
                 f.write(f"# Source: {MAIN_URL}\n\n")
 
                 # Process and write streams for each category
-                if movies:
-                    fetch_and_write_streams(movies, f)
-                if hdtv:
-                    fetch_and_write_streams(hdtv, f)
-                if series_episodes:
-                    fetch_and_write_streams(series_episodes, f)
+                fetch_and_write_streams(movies, f)
+                fetch_and_write_streams(hdtv, f)
+                fetch_and_write_streams(series_episodes, f)
 
             print("\nPlaylist generation completed successfully!")
         EOF
