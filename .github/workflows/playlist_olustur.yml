@@ -1,7 +1,7 @@
 # GitHub Actions workflow to generate and update an M3U playlist
 # This workflow is designed to scrape the HDFilmCehennemi website,
 # mirroring the logic from the provided Kotlin source file.
-# Version 2: Now correctly handles .txt manifest files.
+# Version 3: Fixed HTML selectors to correctly find content on the site.
 
 name: Generate and Update M3U Playlist
 
@@ -85,6 +85,7 @@ jobs:
                 # 2. Find the film_id using regex, as in the Kotlin file
                 film_id_match = re.search(r'var film_id\s*=\s*"(\d+)";', page_content)
                 if not film_id_match:
+                    # print(f"Could not find film_id on page: {item_url}")
                     return None
 
                 film_id = film_id_match.group(1)
@@ -120,22 +121,24 @@ jobs:
             all_items = []
             for page_num in range(1, MAX_PAGES_PER_CATEGORY + 1):
                 page_url = f"{MAIN_URL}{category_path}page/{page_num}/"
+                print(f"Scraping page: {page_url}")
                 soup = get_soup(page_url)
                 if not soup:
                     break
 
-                items_on_page = soup.select("div.ml-item")
+                # CORRECTED SELECTOR: The website now uses <article class="ml-item"> instead of <div>
+                items_on_page = soup.select("article.ml-item")
                 if not items_on_page:
-                    print(f"No items found on page {page_num}. Concluding '{group_title}'.")
+                    print(f"No items found on page {page_num} with selector 'article.ml-item'. Concluding '{group_title}'.")
                     break
 
                 print(f"Found {len(items_on_page)} items on page {page_num} for '{group_title}'")
                 for item in items_on_page:
                     link_tag = item.find("a", href=True)
-                    img_tag = item.find("img", src=True)
+                    img_tag = item.find("img", {"data-src": True}) # Images are lazy-loaded, so use data-src
                     title = link_tag.get('title', 'Unknown Title')
                     url = link_tag['href']
-                    poster = img_tag['src'] if img_tag else ''
+                    poster = img_tag['data-src'] if img_tag else ''
                     all_items.append({'title': title, 'url': url, 'poster': poster, 'group': group_title})
             
             return all_items
@@ -172,6 +175,7 @@ jobs:
             Uses a thread pool to fetch stream URLs concurrently and write them to the M3U file.
             """
             if not items:
+                print(f"Warning: No items to process for a category.")
                 return
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
                 future_to_item = {executor.submit(get_stream_url_from_item, item['url']): item for item in items}
@@ -195,9 +199,10 @@ jobs:
             hdtv = process_category("/category/hdtv/", "HDTV")
             series_episodes = process_series()
 
-            print(f"\nTotal Movies found: {len(movies)}")
-            print(f"Total TV Channels found: {len(hdtv)}")
-            print(f"Total Series Episodes found: {len(series_episodes)}")
+            print(f"\nScraping finished. Found:")
+            print(f"- {len(movies)} Movies")
+            print(f"- {len(hdtv)} TV Channels")
+            print(f"- {len(series_episodes)} Series Episodes")
 
             with open("playlist.m3u", "w", encoding="utf-8") as f:
                 f.write("#EXTM3U\n")
