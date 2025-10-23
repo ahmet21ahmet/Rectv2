@@ -29,12 +29,15 @@ jobs:
         with:
           python-version: '3.x'
 
-      # Gerekli Python kütüphanelerini yükler.
+      # Bağımlılıkları yükler (Sizin listenize göre güncellendi)
       - name: Install Dependencies
         run: |
-          pip install selenium webdriver-manager beautifulsoup4
+          # pip'i günceller
+          python -m pip install --upgrade pip
+          # Gerekli tüm kütüphaneleri tek seferde yükler
+          pip install requests beautifulsoup4 cloudscraper selenium webdriver-manager
 
-      # Düzeltildi: 'EOF' hatası için burada döküman oluşturma yapısı yeniden düzenlendi.
+      # 'EOF' hatası için düzeltilmiş placeholder oluşturma adımı
       # dizipal/diziler.json dosyasını (yoksa) oluşturur.
       - name: Create Placeholder diziler.json (if missing)
         run: |
@@ -51,14 +54,13 @@ EOF
             echo "Placeholder diziler.json created."
           fi
           
-      # Python betiğini çalıştırarak M3U dosyasını oluşturur. (DOSYA ADI: a.py)
-      - name: Run M3U Scraper Script
+      # Python betiğini çalıştırır (Dosya adı: a.py)
+      - name: Run Scraper Script
         run: python a.py
 
-      # Oluşturulan M3U dosyasını kontrol eder ve depoya geri yazar.
+      # Oluşturulan M3U dosyasını depoya kaydeder.
       - name: Commit and Push M3U file
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🤖 Update dizipalyerlidizi.m3u playlist"
           files: dizipalyerlidizi.m3u
-          # Eğer değişiklik yoksa commit yapılmaz.
