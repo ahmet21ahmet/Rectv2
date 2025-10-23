@@ -1,12 +1,10 @@
 name: Generate Dizipal M3U Playlist
 
-# İş akışını manuel olarak tetikleme ve her gün gece yarısı (UTC) çalıştırma
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
 
-# Bu izin, iş akışının depoya değişiklik (commit) yapmasına olanak tanır.
 permissions:
   contents: write
 
@@ -17,28 +15,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Selenium'un kullanacağı Chrome tarayıcısını kurar.
       - name: Setup Chrome for Selenium
         uses: browser-actions/setup-chrome@latest
         with:
           chrome-version: 'stable'
 
-      # Python ortamını hazırlar.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      # Bağımlılıkları yükler (Sizin listenize göre güncellendi)
+      # Gerekli Python kütüphanelerini yükler
       - name: Install Dependencies
         run: |
-          # pip'i günceller
           python -m pip install --upgrade pip
-          # Gerekli tüm kütüphaneleri tek seferde yükler
+          # Sizin verdiğiniz listedeki tüm kütüphaneler
           pip install requests beautifulsoup4 cloudscraper selenium webdriver-manager
 
       # 'EOF' hatası için düzeltilmiş placeholder oluşturma adımı
-      # dizipal/diziler.json dosyasını (yoksa) oluşturur.
       - name: Create Placeholder diziler.json (if missing)
         run: |
           mkdir -p dizipal
@@ -58,7 +52,7 @@ EOF
       - name: Run Scraper Script
         run: python a.py
 
-      # Oluşturulan M3U dosyasını depoya kaydeder.
+      # Commit ve Push adımı (47. satır hatası buradan kaynaklanıyor olabilir)
       - name: Commit and Push M3U file
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
