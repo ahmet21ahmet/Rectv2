@@ -1,25 +1,65 @@
-name: Run Sports M3U Script
+name: Generate Dizipal M3U Playlist
 
+# İş akışını manuel olarak tetikleme ve her gün gece yarısı (UTC) çalıştırma
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+# Bu izin, iş akışının depoya değişiklik (commit) yapmasına olanak tanır.
+permissions:
+  contents: write
 
 jobs:
-  build-and-push:
+  scrape_and_update:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      # Selenium'un kullanacağı Chrome tarayıcısını kurar.
+      - name: Setup Chrome for Selenium
+        uses: browser-actions/setup-chrome@latest
         with:
-          python-version: '3.11'
+          chrome-version: 'stable'
 
-      - name: Install dependencies
+      # Python ortamını hazırlar.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # Gerekli Python kütüphanelerini yükler.
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 cloudscraper selenium webdriver-manager
+          pip install selenium webdriver-manager beautifulsoup4
 
-      - name: Run script
+      # DİKKAT: Betik dizipal/diziler.json dosyasını bekliyor.
+      # Eğer bu dosya depoda yoksa veya içindeki diziler güncel değilse
+      # bu adımda bir placeholder oluşturulur (gerekirse bu adımı silin).
+      - name: Create Placeholder diziler.json (if missing)
+        run: |
+          mkdir -p dizipal
+          if [ ! -f dizipal/diziler.json ]; then
+            cat <<EOF > dizipal/diziler.json
+            {
+              "/dizi-ornegi-yolu": {
+                "group": "Ornek Dizi",
+                "tvg-logo": "https://placehold.co/100x100/000/fff?text=LOGO"
+              }
+            }
+            EOF
+            echo "Placeholder diziler.json created."
+          fi
+          
+      # Python betiğini çalıştırarak M3U dosyasını oluşturur.
+      - name: Run M3U Scraper Script
         run: python a.py
+
+      # Oluşturulan M3U dosyasını kontrol eder ve depoya geri yazar.
+      - name: Commit and Push M3U file
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 Update dizipalyerlidizi.m3u playlist"
+          files: dizipalyerlidizi.m3u
+          # Eğer değişiklik yoksa commit yapılmaz.
