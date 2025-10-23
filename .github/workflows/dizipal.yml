@@ -34,25 +34,24 @@ jobs:
         run: |
           pip install selenium webdriver-manager beautifulsoup4
 
-      # DİKKAT: Betik dizipal/diziler.json dosyasını bekliyor.
-      # Eğer bu dosya depoda yoksa veya içindeki diziler güncel değilse
-      # bu adımda bir placeholder oluşturulur (gerekirse bu adımı silin).
+      # Düzeltildi: 'EOF' hatası için burada döküman oluşturma yapısı yeniden düzenlendi.
+      # dizipal/diziler.json dosyasını (yoksa) oluşturur.
       - name: Create Placeholder diziler.json (if missing)
         run: |
           mkdir -p dizipal
           if [ ! -f dizipal/diziler.json ]; then
-            cat <<EOF > dizipal/diziler.json
-            {
-              "/dizi-ornegi-yolu": {
-                "group": "Ornek Dizi",
-                "tvg-logo": "https://placehold.co/100x100/000/fff?text=LOGO"
-              }
-            }
-            EOF
+            cat << 'EOF' > dizipal/diziler.json
+{
+  "/dizi-ornegi-yolu": {
+    "group": "Ornek Dizi",
+    "tvg-logo": "https://placehold.co/100x100/000/fff?text=LOGO"
+  }
+}
+EOF
             echo "Placeholder diziler.json created."
           fi
           
-      # Python betiğini çalıştırarak M3U dosyasını oluşturur.
+      # Python betiğini çalıştırarak M3U dosyasını oluşturur. (DOSYA ADI: a.py)
       - name: Run M3U Scraper Script
         run: python a.py
 
